@@ -1,14 +1,17 @@
-import { useState } from 'react'
-import { MdEdit, MdDelete, MdPlayArrow, MdPause, MdDone, MdAutoFixHigh, MdBolt } from 'react-icons/md'
+import { useState, useEffect } from 'react'
+import { MdEdit, MdDelete, MdPlayArrow, MdPause, MdDone, MdAutoFixHigh, MdBolt, MdRefresh } from 'react-icons/md'
 import ProjectSetupWizard from '../components/ProjectSetupWizard'
 
-const INITIAL_PROJECTS = [
-  { id: 1, name: 'Diabetes Monitoring', status: 'Active', statusC: 'success', progress: 72, keywords: 42, sources: 'Reddit, X', team: ['RK', 'PS', 'AM'], due: 'Ongoing' },
-  { id: 2, name: 'Vaccine Sentiment Analysis', status: 'Active', statusC: 'success', progress: 45, keywords: 28, sources: 'Reddit, X, News', team: ['PS', 'VP'], due: 'Jun 30, 2025' },
-  { id: 3, name: 'Cardio Drug Safety', status: 'Active', statusC: 'success', progress: 30, keywords: 31, sources: 'Reddit', team: ['RK', 'AM'], due: 'Jul 15, 2025' },
-  { id: 4, name: 'OTC Pain Relief', status: 'On Hold', statusC: 'warning', progress: 60, keywords: 18, sources: 'X (Twitter)', team: ['AM', 'SR'], due: 'Paused' },
-  { id: 5, name: 'Annual Drug Review 2024', status: 'Completed', statusC: 'info', progress: 100, keywords: 52, sources: 'All', team: ['VP', 'AG'], due: 'Completed' },
-  { id: 6, name: 'Mental Health Drugs', status: 'Active', statusC: 'success', progress: 15, keywords: 14, sources: 'Reddit, X', team: ['RK', 'PS'], due: 'Aug 01, 2025' },
+const API_BASE = 'http://localhost:8080'
+
+
+const SEED_PROJECTS = [
+  { id: 1, name: 'Diabetes Monitoring',       status: 'Active',    statusC: 'success', progress: 72, keywords: 42, sources: 'Reddit, X',       team: ['RK','PS','AM'], due: 'Ongoing',       agenticEnabled: false },
+  { id: 2, name: 'Vaccine Sentiment Analysis', status: 'Active',    statusC: 'success', progress: 45, keywords: 28, sources: 'Reddit, X, News', team: ['PS','VP'],       due: 'Jun 30, 2025',  agenticEnabled: false },
+  { id: 3, name: 'Cardio Drug Safety',         status: 'Active',    statusC: 'success', progress: 30, keywords: 31, sources: 'Reddit',         team: ['RK','AM'],       due: 'Jul 15, 2025',  agenticEnabled: false },
+  { id: 4, name: 'OTC Pain Relief',            status: 'On Hold',   statusC: 'warning', progress: 60, keywords: 18, sources: 'X (Twitter)',   team: ['AM','SR'],       due: 'Paused',         agenticEnabled: false },
+  { id: 5, name: 'Annual Drug Review 2024',    status: 'Completed', statusC: 'info',    progress:100, keywords: 52, sources: 'All',           team: ['VP','AG'],       due: 'Completed',      agenticEnabled: false },
+  { id: 6, name: 'Mental Health Drugs',        status: 'Active',    statusC: 'success', progress: 15, keywords: 14, sources: 'Reddit, X',     team: ['RK','PS'],       due: 'Aug 01, 2025',  agenticEnabled: false },
 ]
 
 const SOURCES_OPTIONS = ['Reddit', 'X (Twitter)', 'News', 'PubMed', 'All']
@@ -23,30 +26,96 @@ function getStatusColor(status) {
 }
 
 export default function Projects({ openModal }) {
-  // 1. Check local storage on load. Fallback to INITIAL_PROJECTS if empty.
-  const [projects, setProjects] = useState(() => {
-    const saved = localStorage.getItem("signalrx_projects");
-    return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
-  })
-
+  const [projects, setProjects]     = useState(SEED_PROJECTS)
+  const [apiLoaded, setApiLoaded]   = useState(false)
+  const [loadingApi, setLoadingApi] = useState(true)
   const [statusFilter, setStatusFilter] = useState('All Status')
   const [showWizard, setShowWizard] = useState(false)
+
+  /* Fetch both projects and signals; compute dynamic progress */
+  const fetchProjects = async () => {
+    setLoadingApi(true)
+    try {
+      // Fetch projects and signals in parallel
+      const [projRes, sigRes] = await Promise.all([
+        fetch(`${API_BASE}/api/projects`),
+        fetch(`${API_BASE}/api/signals`),
+      ])
+      const projData = await projRes.json()
+      const sigData  = await sigRes.json()
+
+      if (projData.status === 'success') {
+        const allSignals = sigData.records || []
+
+        const apiProjs = (projData.projects || []).map(p => {
+          // Normalise keyword list
+          const kwList = Array.isArray(p.keywords) ? p.keywords : []
+          const primaryKw = (kwList[0] || '').toLowerCase()
+
+          // Count matching signals against drug name (case-insensitive)
+          const signalCount = primaryKw
+            ? allSignals.filter(s =>
+                (s.drug || '').toLowerCase().includes(primaryKw)
+              ).length
+            : 0
+
+          // 10 signals == 100% progress; cap at 100
+          const calculatedProgress = Math.min(signalCount * 10, 100)
+
+          return {
+            ...p,
+            keywords: p.keywords_count ?? kwList.length,
+            sources:  p.sources_label ?? (Array.isArray(p.sources) ? p.sources.join(', ') : p.sources || 'Reddit'),
+            progress: calculatedProgress,
+            status:   calculatedProgress > 0 ? 'Active' : (p.status || 'Pending'),
+            statusC:  calculatedProgress > 0 ? 'success' : 'warning',
+          }
+        })
+
+        // Prepend API records, then append seed entries not duplicated by name
+        const apiNames = new Set(apiProjs.map(p => p.name.toLowerCase()))
+        const seeds = SEED_PROJECTS.filter(p => !apiNames.has(p.name.toLowerCase()))
+        setProjects([...apiProjs, ...seeds])
+        setApiLoaded(true)
+      }
+    } catch {
+      /* keep seed data if backend unreachable */
+    }
+    setLoadingApi(false)
+  }
+
+  useEffect(() => { fetchProjects() }, [])
 
   const filtered = projects.filter(p =>
     statusFilter === 'All Status' || p.status === statusFilter
   )
 
-  // 2. Global save helper to keep React State and Local Storage in sync
-  const saveProjects = (updatedProjects) => {
-    setProjects(updatedProjects);
-    localStorage.setItem("signalrx_projects", JSON.stringify(updatedProjects));
-  };
+  /* Save helper — updates React state (localStorage kept as local backup) */
+  const saveProjects = (updated) => {
+    setProjects(updated)
+    try { localStorage.setItem('signalrx_projects', JSON.stringify(updated)) } catch {}
+  }
 
-  // Add Project Helper
-  const addProject = (newProject) => {
-    const updatedProjects = [newProject, ...projects]; // Puts new project at the top
-    saveProjects(updatedProjects);
-  };
+  /* addProject: POST to API then prepend to local state */
+  const addProject = async (newProject) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newProject.name,
+          keywords: Array.isArray(newProject.keywords) ? newProject.keywords : [],
+          sources: Array.isArray(newProject.sources) ? newProject.sources : (newProject.sources ? [newProject.sources] : []),
+          agentic_enabled: !!newProject.agenticEnabled,
+        }),
+      })
+      if (res.ok) {
+        await fetchProjects()   // refresh from DB
+        return
+      }
+    } catch { /* fall through to local-only save */ }
+    saveProjects([newProject, ...projects])
+  }
 
   // ── New Project ──────────────────────────────────────────────
   const handleNewProject = () => {
@@ -215,7 +284,12 @@ export default function Projects({ openModal }) {
         </select>
         <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 4 }}>
           {filtered.length} project{filtered.length !== 1 ? 's' : ''}
+          {loadingApi && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--muted)' }}>syncing…</span>}
         </span>
+        <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8, display: 'flex', alignItems: 'center', gap: 4 }}
+          onClick={fetchProjects} disabled={loadingApi} title="Refresh from DB">
+          <MdRefresh size={14} className={loadingApi ? 'spin' : ''} />
+        </button>
         <button className="btn btn-secondary btn-sm" style={{ marginLeft: 'auto', gap: 6 }} onClick={() => setShowWizard(true)}>
           <MdAutoFixHigh size={14} /> Setup Wizard
         </button>

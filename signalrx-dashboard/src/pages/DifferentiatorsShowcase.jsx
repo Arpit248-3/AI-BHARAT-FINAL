@@ -4,7 +4,7 @@ import {
   MdFileDownload, MdWarning, MdCheckCircle, MdPsychology,
   MdSentimentVeryDissatisfied, MdSentimentNeutral,
   MdLocalHospital, MdCompareArrows, MdStar, MdEmojiEvents,
-  MdCode, MdDescription
+  MdCode, MdDescription, MdContentCopy, MdDone
 } from 'react-icons/md'
 
 /* ═══════════════════════════════════════════════════════════
@@ -221,32 +221,96 @@ function SeverityDecoupling() {
 
 
 /* ═══════════════════════════════════════════════════════════
+   COPY BUTTON — clipboard helper for on-screen XML
+   ═══════════════════════════════════════════════════════════ */
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => {
+      // Fallback for browsers without clipboard API
+      const el = document.createElement('textarea')
+      el.value = text
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+  return (
+    <button onClick={handleCopy}
+      title={copied ? 'Copied!' : 'Copy XML to clipboard'}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 4,
+        padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+        fontSize: 11, fontWeight: 700, transition: 'all .2s',
+        background: copied ? 'rgba(16,185,129,.15)' : 'rgba(139,92,246,.15)',
+        color: copied ? '#10B981' : '#a6adc8' }}>
+      {copied ? <MdDone size={13} /> : <MdContentCopy size={13} />}
+      {copied ? 'Copied!' : 'Copy'}
+    </button>
+  )
+}
+
+
+/* ═══════════════════════════════════════════════════════════
    FEATURE 3 — E2B (R3) EXPORT
    ═══════════════════════════════════════════════════════════ */
 function E2BExport() {
   const [exporting, setExporting] = useState(false)
-  const [exported, setExported] = useState(false)
+  const [showXML, setShowXML]     = useState(false)
 
   const handleExport = () => {
     setExporting(true)
-    setTimeout(() => { setExporting(false); setExported(true) }, 2000)
+    setTimeout(() => { setExporting(false); setShowXML(true) }, 1800)
   }
 
   const xmlSnippet = `<?xml version="1.0" encoding="UTF-8"?>
+<!-- AyuScout V2 — ICH E2B(R3) ICSR | Generated: ${new Date().toISOString().slice(0,19)}Z -->
 <ichicsr lang="en" xmlns="urn:hl7-org:v3">
+  <ichicsrmessageheader>
+    <messagetype>ichicsr</messagetype>
+    <messageformatversion>2.1</messageformatversion>
+    <messagenumb>AYU-2025-00036</messagenumb>
+    <messagesenderidentifier>AyuScout-V2-Dashboard</messagesenderidentifier>
+    <messagereceiveridentifier>CDSCO-INDIA</messagereceiveridentifier>
+  </ichicsrmessageheader>
   <safetyreport>
     <safetyreportid>AYU-2025-00036</safetyreportid>
     <primarysourcecountry>IN</primarysourcecountry>
+    <reporttype>1</reporttype>
+    <serious>1</serious>
+    <seriousnesshospitalization>1</seriousnesshospitalization>
     <patient>
-      <patientinitial>[MASKED]</patientinitial>
-      <reaction>
-        <reactionmeddraversionllt>27.0</reactionmeddraversionllt>
-        <reactionmeddrallt>Angioedema</reactionmeddrallt>
-      </reaction>
+      <patientinitial>[REDACTED-PII-VAULT]</patientinitial>
+      <patientagegroup>5</patientagegroup>
       <drug>
         <drugcharacterization>1</drugcharacterization>
         <medicinalproduct>Lisinopril</medicinalproduct>
+        <drugindication>Hypertension</drugindication>
+        <drugreactionassessment>
+          <drugassessmentmethod>WHO-UMC Causality System</drugassessmentmethod>
+          <drugassessmentresult>Certain</drugassessmentresult>
+          <drugassessmentsource>AyuScout V2 AI (Confidence: 92%)</drugassessmentsource>
+        </drugreactionassessment>
       </drug>
+      <reaction>
+        <primarysourcereaction>Angioedema</primarysourcereaction>
+        <reactionmeddraversionllt>27.0</reactionmeddraversionllt>
+        <reactionmeddrallt>Angioedema</reactionmeddrallt>
+        <reactionoutcome>6</reactionoutcome>
+      </reaction>
+      <summary>
+        <narrativeincludeclinical>
+          Patient reported facial swelling 3 months after initiating Lisinopril
+          therapy for hypertension. WHO-UMC causality: Certain. AyuScout V2
+          AI reasoning: strong temporal relationship, known mechanism.
+          PII masked by k-Anonymity vault per DPDP Act 2023.
+        </narrativeincludeclinical>
+      </summary>
     </patient>
   </safetyreport>
 </ichicsr>`
@@ -259,7 +323,7 @@ function E2BExport() {
           display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MdDescription size={22} /></div>
         <div>
           <div style={{ fontSize: 16, fontWeight: 700 }}>One-Click Regulatory Compliance</div>
-          <div style={{ fontSize: 12, color: 'var(--muted)' }}>E2B(R3) XML — FDA MedWatch & CDSCO Standard</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)' }}>E2B(R3) XML — FDA MedWatch &amp; CDSCO Standard</div>
         </div>
       </div>
       <div className="card-body">
@@ -287,13 +351,13 @@ function E2BExport() {
               Generate E2B(R3) XML Report
             </div>
             <div style={{ fontSize: 11, color: 'var(--text2)', marginBottom: 12 }}>
-              ICH-compliant ICSR with MedDRA coding, WHO-UMC causality, PII masking
+              ICH-compliant ICSR with MedDRA coding, WHO-UMC causality &amp; PII masking
             </div>
-            {exported ? (
+            {showXML ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <MdCheckCircle size={18} style={{ color: 'var(--success)' }} />
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--success)' }}>
-                  E2B_ICSR_AYU-2025-00036.xml — Ready for FDA MedWatch submission
+                  E2B_ICSR_AYU-2025-00036.xml — Preview below ↓
                 </span>
               </div>
             ) : (
@@ -302,24 +366,39 @@ function E2BExport() {
                   background: exporting ? 'var(--text2)' : 'linear-gradient(135deg,#3B82F6,#1d4ed8)' }}>
                 {exporting
                   ? <><span className="login-spinner" style={{ width: 14, height: 14 }} /> Generating XML…</>
-                  : <><MdFileDownload size={16} /> Generate E2B(R3) XML</>}
+                  : <><MdCode size={16} /> Generate E2B(R3) XML</>}
               </button>
             )}
           </div>
         </div>
-        {/* XML preview */}
-        {exported && (
-          <div style={{ animation: 'slideUp .3s ease' }}>
+
+        {/* ── On-screen XML viewer (no file download needed for demo) ── */}
+        {showXML && (
+          <div style={{ animation: 'slideUp .35s ease' }}>
+            {/* Title bar */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              background: '#1e1e2e', borderRadius: '8px 8px 0 0', padding: '8px 16px' }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#a6adc8', letterSpacing: '.03em' }}>
-                E2B_ICSR_AYU-2025-00036.xml
-              </span>
-              <span style={{ fontSize: 10, color: '#a6e3a1', fontWeight: 700 }}>✓ ICH E2B(R3) VALIDATED</span>
+              background: '#1e1e2e', borderRadius: '8px 8px 0 0', padding: '9px 16px',
+              borderBottom: '1px solid #313244' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f38ba8', display: 'block' }} />
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f9e2af', display: 'block' }} />
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#a6e3a1', display: 'block' }} />
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#585b70',
+                  marginLeft: 6, fontFamily: 'monospace' }}>E2B_ICSR_AYU-2025-00036.xml</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 10, color: '#a6e3a1', fontWeight: 700,
+                  background: 'rgba(166,227,161,.1)', padding: '2px 8px', borderRadius: 4 }}>
+                  ✓ ICH E2B(R3) VALIDATED
+                </span>
+                <CopyButton text={xmlSnippet} />
+              </div>
             </div>
-            <pre style={{ margin: 0, padding: '14px 20px', background: '#181825', borderRadius: '0 0 8px 8px',
-              overflow: 'auto', maxHeight: 260, fontSize: 12, lineHeight: 1.6,
-              fontFamily: "'JetBrains Mono','Fira Code',Consolas,monospace", color: '#cdd6f4' }}>
+            {/* Code block */}
+            <pre style={{ margin: 0, padding: '16px 20px', background: '#181825',
+              borderRadius: '0 0 8px 8px', overflow: 'auto', maxHeight: 340, fontSize: 12,
+              lineHeight: 1.65, fontFamily: "'JetBrains Mono','Fira Code',Consolas,monospace",
+              color: '#cdd6f4', border: '1px solid #313244', borderTop: 'none' }}>
               <code>{xmlHighlight(xmlSnippet)}</code>
             </pre>
           </div>

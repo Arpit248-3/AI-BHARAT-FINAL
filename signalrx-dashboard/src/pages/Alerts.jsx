@@ -216,11 +216,12 @@ function TraceabilityDrawer({ signal, onClose }) {
 export default function Alerts({ openModal }) {
   const [liveSignals, setLiveSignals] = useState([])
   const [loading, setLoading]         = useState(true)
+  const [trendData, setTrendData]     = useState([])
   const [exportingId, setExportingId] = useState(null)
   const [drawerSignal, setDrawerSignal] = useState(null)
   const [sevFilter, setSevFilter]     = useState('All')
 
-  /* ── Fetch live signals from backend ─────────────────────── */
+  /* ── Fetch live signals ─────────────────────────────────────── */
   const fetchLiveSignals = async () => {
     setLoading(true)
     try {
@@ -231,7 +232,26 @@ export default function Alerts({ openModal }) {
     setLoading(false)
   }
 
-  useEffect(() => { fetchLiveSignals() }, [])
+  /* ── Fetch trend timeline from /api/trends ──────────────────── */
+  const fetchTrends = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/trends?days=7`)
+      const data = await res.json()
+      if (data.status === 'success' && Array.isArray(data.data) && data.data.length > 0) {
+        setTrendData(data.data)
+      } else {
+        // Build placeholder buckets if DB is empty
+        const days = []
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(); d.setDate(d.getDate() - i)
+          days.push({ date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), signals: 0 })
+        }
+        setTrendData(days)
+      }
+    } catch { /* silently ignore */ }
+  }
+
+  useEffect(() => { fetchLiveSignals(); fetchTrends() }, [])
 
   /* ── E2B Export ───────────────────────────────────────────── */
   const handleExportE2B = async (recordId) => {
@@ -253,16 +273,14 @@ export default function Alerts({ openModal }) {
   // Expose for drawer
   useEffect(() => { window.__exportE2B = handleExportE2B; return () => { delete window.__exportE2B } })
 
-  /* ── Build timeline data from real signals ───────────────── */
-  const timelineData = (() => {
+  /* ── Build timeline (use live trend data, fall back to signal distribution) ── */
+  const timelineData = trendData.length > 0 ? trendData : (() => {
     const days = []
     for (let i = 6; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i)
       const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      // Distribute signals across days for visual interest
       const base = Math.max(1, Math.floor(liveSignals.length / 7))
-      const jitter = Math.floor(Math.random() * 4) - 1
-      days.push({ date: label, signals: Math.max(0, base + jitter + (i === 0 ? 3 : 0)) })
+      days.push({ date: label, signals: Math.max(0, base + (i === 0 ? 2 : 0)) })
     }
     return days
   })()

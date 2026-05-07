@@ -4,21 +4,22 @@ import { MdArrowUpward, MdArrowDownward, MdRefresh, MdDownload, MdWarning } from
 
 const API_BASE = 'http://localhost:8080'
 
-// 7-Day signal spike data — Day 5 shows 238% surge (Lisinopril cluster event)
-const SPIKE_DATA = [
-  { day: 'Mon May 1',  signals: 8,  baseline: 9  },
-  { day: 'Tue May 2',  signals: 10, baseline: 9  },
-  { day: 'Wed May 3',  signals: 9,  baseline: 9  },
-  { day: 'Thu May 4',  signals: 11, baseline: 9  },
-  { day: 'Fri May 5',  signals: 38, baseline: 9  },  // +238% SPIKE
-  { day: 'Sat May 6',  signals: 15, baseline: 9  },
-  { day: 'Sun May 7',  signals: 12, baseline: 9  },
+// Fallback spike data used only when DB is empty (shows demo narrative)
+const FALLBACK_SPIKE = [
+  { day: 'Mon', signals: 8,  baseline: 9 },
+  { day: 'Tue', signals: 10, baseline: 9 },
+  { day: 'Wed', signals: 9,  baseline: 9 },
+  { day: 'Thu', signals: 11, baseline: 9 },
+  { day: 'Fri', signals: 38, baseline: 9 },
+  { day: 'Sat', signals: 15, baseline: 9 },
+  { day: 'Sun', signals: 12, baseline: 9 },
 ]
 
 export default function TrendAnalysis({ openModal }) {
-  const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [stats, setStats]       = useState(null)
+  const [loading, setLoading]   = useState(true)
   const [generating, setGenerating] = useState(false)
+  const [spikeData, setSpikeData]   = useState(FALLBACK_SPIKE)
 
   const fetchStats = async () => {
     setLoading(true)
@@ -32,7 +33,20 @@ export default function TrendAnalysis({ openModal }) {
     setLoading(false)
   }
 
-  useEffect(() => { fetchStats() }, [])
+  const fetchTrends = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/trends?days=7`)
+      const data = await res.json()
+      if (data.status === 'success' && Array.isArray(data.data) && data.data.length > 0) {
+        const baseline = Math.max(1, Math.round(
+          data.data.reduce((s, d) => s + d.signals, 0) / data.data.length
+        ))
+        setSpikeData(data.data.map(d => ({ day: d.date, signals: d.signals, baseline })))
+      }
+    } catch { /* keep fallback */ }
+  }
+
+  useEffect(() => { fetchStats(); fetchTrends() }, [])
 
   const totalRecords = stats?.total_records || 0
   const sevCounts = stats?.severity_counts || {}
@@ -90,12 +104,11 @@ export default function TrendAnalysis({ openModal }) {
         </div>
         <div className="card-body" style={{ padding: '8px 16px 12px' }}>
           <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
-            A <strong style={{ color: '#EF4444' }}>238% surge</strong> detected on Friday May 5th —
-            driven by a cluster of Lisinopril–Angioedema reports from Reddit r/hypertension.
-            Baseline: ~9 signals/day. Spike: <strong>38 signals</strong>.
+            Live signal volume from the Intelligence Vault — last 7 days.
+            Baseline line shows the rolling average. <strong style={{ color: '#EF4444' }}>Spikes</strong> indicate cluster events.
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={SPIKE_DATA} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+            <LineChart data={spikeData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="spikeGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#EF4444" stopOpacity={0.15} />
@@ -113,17 +126,17 @@ export default function TrendAnalysis({ openModal }) {
                 itemStyle={{ color: '#f38ba8', fontSize: 12 }}
                 formatter={(v, n) => [v + ' signals', n === 'signals' ? 'Adverse Signals' : 'Baseline']}
               />
-              {/* Baseline reference */}
-              <ReferenceLine y={9} stroke="#3B82F6" strokeDasharray="6 3" strokeWidth={1.5}
-                label={{ value: 'Baseline ~9', position: 'insideTopRight', fontSize: 10, fill: '#3B82F6' }} />
-              {/* Spike annotation */}
-              <ReferenceLine x="Fri May 5" stroke="#EF4444" strokeDasharray="4 2" strokeWidth={1.5} />
+              {/* Dynamic baseline */}
+              <ReferenceLine y={spikeData[0]?.baseline || 9} stroke="#3B82F6" strokeDasharray="6 3" strokeWidth={1.5}
+                label={{ value: `Baseline ~${spikeData[0]?.baseline || 9}`, position: 'insideTopRight', fontSize: 10, fill: '#3B82F6' }} />
               <Line type="monotone" dataKey="baseline" stroke="#3B82F6" strokeWidth={1.5}
                 dot={false} strokeDasharray="4 4" name="Baseline" />
               <Line type="monotone" dataKey="signals" stroke="#EF4444" strokeWidth={2.5}
                 dot={(props) => {
-                  const { cx, cy, payload } = props
-                  return payload.day === 'Fri May 5'
+                  const { cx, cy, index } = props
+                  const maxVal = Math.max(...spikeData.map(d => d.signals))
+                  const isSpike = props.payload?.signals === maxVal && maxVal > (spikeData[0]?.baseline || 9)
+                  return isSpike
                     ? <circle key={cx} cx={cx} cy={cy} r={7} fill="#EF4444" stroke="#fff" strokeWidth={2} />
                     : <circle key={cx} cx={cx} cy={cy} r={4} fill="#EF4444" stroke="#fff" strokeWidth={2} />
                 }}

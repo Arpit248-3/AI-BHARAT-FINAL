@@ -97,6 +97,20 @@ class HelpQuery(Base):
     notified    = Column(Boolean, default=False)
 
 
+class Project(Base):
+    """Pharmacovigilance monitoring projects created by users."""
+    __tablename__ = "projects"
+
+    id                  = Column(Integer, primary_key=True, autoincrement=True)
+    name                = Column(String(300), nullable=False)
+    keywords_json       = Column(Text, default="[]")   # JSON array of keyword strings
+    sources_json        = Column(Text, default="[]")   # JSON array of source IDs
+    scraper_config_json = Column(Text, default="{}")   # JSON scraper config from Agentic Onboarder
+    status              = Column(String(50), default='Active')
+    agentic_enabled     = Column(Boolean, default=False)
+    created_at          = Column(DateTime, default=datetime.now)
+
+
 # ============================================================
 # PASSWORD HELPERS
 # ============================================================
@@ -679,3 +693,121 @@ def _serialize_query(q):
         'answered_at': q.answered_at.isoformat() if q.answered_at else None,
         'notified': q.notified,
     }
+
+
+# ============================================================
+# PROJECT CRUD
+# ============================================================
+
+def create_project(name: str, keywords: list, sources: list, scraper_config: dict = None, agentic_enabled: bool = False):
+    """Create and persist a new monitoring project."""
+    session = SessionLocal()
+    try:
+        proj = Project(
+            name=name,
+            keywords_json=json.dumps(keywords or []),
+            sources_json=json.dumps(sources or []),
+            scraper_config_json=json.dumps(scraper_config or {}),
+            status='Active',
+            agentic_enabled=agentic_enabled,
+            created_at=datetime.now()
+        )
+        session.add(proj)
+        session.commit()
+        return _serialize_project(proj)
+    except Exception as e:
+        session.rollback()
+        print(f"   ❌ Project create failed: {e}")
+        return None
+    finally:
+        session.close()
+
+
+def get_all_projects():
+    """Return all projects ordered by creation date."""
+    session = SessionLocal()
+    try:
+        projs = session.query(Project).order_by(Project.created_at.desc()).all()
+        return [_serialize_project(p) for p in projs]
+    finally:
+        session.close()
+
+
+def _serialize_project(p):
+    try:
+        keywords = json.loads(p.keywords_json or '[]')
+    except Exception:
+        keywords = []
+    try:
+        sources = json.loads(p.sources_json or '[]')
+    except Exception:
+        sources = []
+    try:
+        scraper_config = json.loads(p.scraper_config_json or '{}')
+    except Exception:
+        scraper_config = {}
+    return {
+        'id': p.id,
+        'name': p.name,
+        'keywords': keywords,
+        'keywords_count': len(keywords),
+        'sources': sources,
+        'sources_label': ', '.join(sources) if sources else 'Reddit',
+        'scraper_config': scraper_config,
+        'status': p.status or 'Active',
+        'statusC': 'success' if (p.status or 'Active') == 'Active' else 'warning',
+        'agentic_enabled': bool(p.agentic_enabled),
+        'progress': 0,
+        'team': ['AI'],
+        'due': 'Ongoing',
+        'created_at': p.created_at.isoformat() if p.created_at else None,
+    }
+
+
+# ============================================================
+# SIGNALS API  (thin wrapper over IntelligenceVault)
+# ============================================================
+
+def get_all_signals():
+    """Return all signals in the format expected by /api/signals."""
+    return get_all_intelligence()
+
+
+# ============================================================
+# TRENDS DATA  (groups IntelligenceVault records by calendar date)
+# ============================================================
+
+def get_trends_data(days: int = 14):
+    """
+    Build a daily signal-count timeline for the last `days` calendar days.
+    Returns a list of {date, signals, critical, high} dicts for Recharts.
+    """
+    from datetime import timedelta
+    session = SessionLocal()
+    try:
+        records = session.query(IntelligenceVault).order_by(
+            IntelligenceVault.created_at.desc()
+        ).all()
+
+        today = datetime.now().date()
+        # Build a bucket for each day
+        buckets = {}
+        for i in range(days - 1, -1, -1):
+            d = today - timedelta(days=i)
+            label = d.strftime('%b %d')
+            buckets[d] = {'date': label, 'signals': 0, 'critical': 0, 'high': 0}
+
+        for r in records:
+            if not r.created_at:
+                continue
+            d = r.created_at.date()
+            if d in buckets:
+                buckets[d]['signals'] += 1
+                if r.severity == 'Critical':
+                    buckets[d]['critical'] += 1
+                elif r.severity == 'High':
+                    buckets[d]['high'] += 1
+
+        return list(buckets.values())
+    finally:
+        session.close()
