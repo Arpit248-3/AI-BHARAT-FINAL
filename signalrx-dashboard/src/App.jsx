@@ -14,6 +14,8 @@ import Settings from './pages/Settings'
 import Login from './pages/Login'
 import HelpCenter from './pages/HelpCenter'
 import AdminHelpDashboard from './pages/AdminHelpDashboard'
+import DifferentiatorsShowcase from './pages/DifferentiatorsShowcase'
+import CrawlerPage from './pages/CrawlerPage'
 
 const titles = {
   dashboard:            'Actionable Insights Dashboard',
@@ -27,6 +29,8 @@ const titles = {
   settings:             'Settings',
   'help-center':        'Help Center',
   'admin-help':         'Admin Panel — Help Queries',
+  differentiators:      'Competitive Differentiators',
+  crawler:              'Self-Healing Agentic Crawler',
 }
 
 const pages = {
@@ -41,6 +45,8 @@ const pages = {
   settings:             Settings,
   'help-center':        HelpCenter,
   'admin-help':         AdminHelpDashboard,
+  differentiators:      DifferentiatorsShowcase,
+  crawler:              CrawlerPage,
 }
 
 export default function App() {

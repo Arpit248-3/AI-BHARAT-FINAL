@@ -1,20 +1,21 @@
 import { useState } from 'react'
-import { MdEdit, MdDelete, MdPlayArrow, MdPause, MdDone } from 'react-icons/md'
+import { MdEdit, MdDelete, MdPlayArrow, MdPause, MdDone, MdAutoFixHigh, MdBolt } from 'react-icons/md'
+import ProjectSetupWizard from '../components/ProjectSetupWizard'
 
 const INITIAL_PROJECTS = [
-  { id: 1, name: 'Diabetes Monitoring',         status: 'Active',    statusC: 'success', progress: 72,  keywords: 42, sources: 'Reddit, X',       team: ['RK','PS','AM'], due: 'Ongoing' },
-  { id: 2, name: 'Vaccine Sentiment Analysis',   status: 'Active',    statusC: 'success', progress: 45,  keywords: 28, sources: 'Reddit, X, News', team: ['PS','VP'],      due: 'Jun 30, 2025' },
-  { id: 3, name: 'Cardio Drug Safety',           status: 'Active',    statusC: 'success', progress: 30,  keywords: 31, sources: 'Reddit',          team: ['RK','AM'],      due: 'Jul 15, 2025' },
-  { id: 4, name: 'OTC Pain Relief',              status: 'On Hold',   statusC: 'warning', progress: 60,  keywords: 18, sources: 'X (Twitter)',     team: ['AM','SR'],      due: 'Paused' },
-  { id: 5, name: 'Annual Drug Review 2024',      status: 'Completed', statusC: 'info',    progress: 100, keywords: 52, sources: 'All',             team: ['VP','AG'],      due: 'Completed' },
-  { id: 6, name: 'Mental Health Drugs',          status: 'Active',    statusC: 'success', progress: 15,  keywords: 14, sources: 'Reddit, X',       team: ['RK','PS'],      due: 'Aug 01, 2025' },
+  { id: 1, name: 'Diabetes Monitoring', status: 'Active', statusC: 'success', progress: 72, keywords: 42, sources: 'Reddit, X', team: ['RK', 'PS', 'AM'], due: 'Ongoing' },
+  { id: 2, name: 'Vaccine Sentiment Analysis', status: 'Active', statusC: 'success', progress: 45, keywords: 28, sources: 'Reddit, X, News', team: ['PS', 'VP'], due: 'Jun 30, 2025' },
+  { id: 3, name: 'Cardio Drug Safety', status: 'Active', statusC: 'success', progress: 30, keywords: 31, sources: 'Reddit', team: ['RK', 'AM'], due: 'Jul 15, 2025' },
+  { id: 4, name: 'OTC Pain Relief', status: 'On Hold', statusC: 'warning', progress: 60, keywords: 18, sources: 'X (Twitter)', team: ['AM', 'SR'], due: 'Paused' },
+  { id: 5, name: 'Annual Drug Review 2024', status: 'Completed', statusC: 'info', progress: 100, keywords: 52, sources: 'All', team: ['VP', 'AG'], due: 'Completed' },
+  { id: 6, name: 'Mental Health Drugs', status: 'Active', statusC: 'success', progress: 15, keywords: 14, sources: 'Reddit, X', team: ['RK', 'PS'], due: 'Aug 01, 2025' },
 ]
 
 const SOURCES_OPTIONS = ['Reddit', 'X (Twitter)', 'News', 'PubMed', 'All']
 const STATUS_OPTIONS = [
-  { label: 'Active',    c: 'success', icon: <MdPlayArrow size={12} /> },
-  { label: 'On Hold',  c: 'warning', icon: <MdPause    size={12} /> },
-  { label: 'Completed',c: 'info',    icon: <MdDone     size={12} /> },
+  { label: 'Active', c: 'success', icon: <MdPlayArrow size={12} /> },
+  { label: 'On Hold', c: 'warning', icon: <MdPause size={12} /> },
+  { label: 'Completed', c: 'info', icon: <MdDone size={12} /> },
 ]
 
 function getStatusColor(status) {
@@ -22,12 +23,30 @@ function getStatusColor(status) {
 }
 
 export default function Projects({ openModal }) {
-  const [projects, setProjects] = useState(INITIAL_PROJECTS)
+  // 1. Check local storage on load. Fallback to INITIAL_PROJECTS if empty.
+  const [projects, setProjects] = useState(() => {
+    const saved = localStorage.getItem("signalrx_projects");
+    return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
+  })
+
   const [statusFilter, setStatusFilter] = useState('All Status')
+  const [showWizard, setShowWizard] = useState(false)
 
   const filtered = projects.filter(p =>
     statusFilter === 'All Status' || p.status === statusFilter
   )
+
+  // 2. Global save helper to keep React State and Local Storage in sync
+  const saveProjects = (updatedProjects) => {
+    setProjects(updatedProjects);
+    localStorage.setItem("signalrx_projects", JSON.stringify(updatedProjects));
+  };
+
+  // Add Project Helper
+  const addProject = (newProject) => {
+    const updatedProjects = [newProject, ...projects]; // Puts new project at the top
+    saveProjects(updatedProjects);
+  };
 
   // ── New Project ──────────────────────────────────────────────
   const handleNewProject = () => {
@@ -87,7 +106,9 @@ export default function Projects({ openModal }) {
                 ? new Date(formData.due).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                 : 'Ongoing',
             }
-            setProjects(prev => [newProject, ...prev])
+
+            // Replaced setProjects with addProject to trigger local storage save
+            addProject(newProject)
             openModal(null)
           }}>Create Project</button>
         </>
@@ -136,7 +157,9 @@ export default function Projects({ openModal }) {
         <>
           <button className="btn btn-ghost" onClick={() => openModal(null)}>Cancel</button>
           <button className="btn btn-primary" onClick={() => {
-            setProjects(prev => prev.map(p => p.id === project.id ? { ...p, ...formData } : p))
+            // Replaced setProjects with saveProjects to trigger local storage save
+            const updatedProjects = projects.map(p => p.id === project.id ? { ...p, ...formData } : p);
+            saveProjects(updatedProjects);
             openModal(null)
           }}>Save Changes</button>
         </>
@@ -157,12 +180,28 @@ export default function Projects({ openModal }) {
         <>
           <button className="btn btn-ghost" onClick={() => openModal(null)}>Cancel</button>
           <button className="btn btn-primary" style={{ background: 'var(--danger)' }} onClick={() => {
-            setProjects(prev => prev.filter(p => p.id !== project.id))
+            // Replaced setProjects with saveProjects to trigger local storage save
+            const updatedProjects = projects.filter(p => p.id !== project.id);
+            saveProjects(updatedProjects);
             openModal(null)
           }}>Delete</button>
         </>
       )
     })
+  }
+
+  // ── Wizard closes with a new project (or just close) ────────
+  const handleWizardClose = (newProject) => {
+    setShowWizard(false)
+    if (newProject && newProject.id) {
+      // Replaced setProjects with addProject to trigger local storage save
+      addProject(newProject)
+    }
+  }
+
+  // ── Render Wizard View ───────────────────────────────────────
+  if (showWizard) {
+    return <ProjectSetupWizard onClose={handleWizardClose} />
   }
 
   return (
@@ -177,7 +216,10 @@ export default function Projects({ openModal }) {
         <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 4 }}>
           {filtered.length} project{filtered.length !== 1 ? 's' : ''}
         </span>
-        <button className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }} onClick={handleNewProject}>
+        <button className="btn btn-secondary btn-sm" style={{ marginLeft: 'auto', gap: 6 }} onClick={() => setShowWizard(true)}>
+          <MdAutoFixHigh size={14} /> Setup Wizard
+        </button>
+        <button className="btn btn-primary btn-sm" onClick={handleNewProject}>
           + New Project
         </button>
       </div>
@@ -189,6 +231,16 @@ export default function Projects({ openModal }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, alignItems: 'flex-start' }}>
                 <h3 style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.3 }}>{p.name}</h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {p.agenticEnabled && (
+                    <span style={{
+                      display: 'flex', alignItems: 'center', gap: 3, padding: '2px 7px',
+                      borderRadius: 10, fontSize: 10, fontWeight: 700,
+                      background: 'rgba(139,92,246,.12)', color: '#8B5CF6',
+                      border: '1px solid rgba(139,92,246,.25)'
+                    }}>
+                      <MdBolt size={10} /> AI
+                    </span>
+                  )}
                   <span className={`badge badge-${p.statusC}`}>{p.status}</span>
                 </div>
               </div>
@@ -211,7 +263,7 @@ export default function Projects({ openModal }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex' }}>
                   {p.team.map((t, i) => (
-                    <div key={t+i} style={{
+                    <div key={t + i} style={{
                       width: 28, height: 28, borderRadius: '50%', background: 'var(--navy)', color: '#fff',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 10, fontWeight: 700, border: '2px solid #fff', marginLeft: i > 0 ? -8 : 0
