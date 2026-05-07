@@ -2,7 +2,7 @@ import {
   MdBiotech, MdDashboard, MdManageSearch, MdTrendingUp,
   MdNotificationsActive, MdAssessment, MdMarkEmailUnread,
   MdGroup, MdFolderOpen, MdSettings, MdHelpOutline,
-  MdShield, MdLogout, MdEmojiEvents, MdTravelExplore
+  MdShield, MdLogout, MdEmojiEvents, MdTravelExplore, MdAutoFixHigh
 } from 'react-icons/md'
 
 export default function Sidebar({ activePage, onNavigate, currentUser, onLogout }) {
@@ -26,8 +26,9 @@ export default function Sidebar({ activePage, onNavigate, currentUser, onLogout 
         { id: 'data-explorer',   icon: MdManageSearch,       label: 'Data Explorer' },
         { id: 'trend-analysis',  icon: MdTrendingUp,         label: 'Trend Analysis' },
         { id: 'help-center',     icon: MdHelpOutline,        label: 'Help Center' },
-        { id: 'differentiators', icon: MdEmojiEvents,    label: 'Differentiators' },
-        { id: 'crawler',         icon: MdTravelExplore,  label: 'Self-Heal Crawler' },
+        { id: 'differentiators', icon: MdEmojiEvents,        label: 'Differentiators' },
+        { id: 'command-center',  icon: MdAutoFixHigh,        label: 'Command Center' },
+        { id: 'crawler',         icon: MdTravelExplore,      label: 'Self-Heal Crawler' },
       ]
     },
     {

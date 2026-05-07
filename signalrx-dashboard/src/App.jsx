@@ -16,6 +16,7 @@ import HelpCenter from './pages/HelpCenter'
 import AdminHelpDashboard from './pages/AdminHelpDashboard'
 import DifferentiatorsShowcase from './pages/DifferentiatorsShowcase'
 import CrawlerPage from './pages/CrawlerPage'
+import CommandCenter from './pages/CommandCenter'
 
 const titles = {
   dashboard:            'Actionable Insights Dashboard',
@@ -31,6 +32,7 @@ const titles = {
   'admin-help':         'Admin Panel — Help Queries',
   differentiators:      'Competitive Differentiators',
   crawler:              'Self-Healing Agentic Crawler',
+  'command-center':     'Competitive Differentiators — Command Center',
 }
 
 const pages = {
@@ -47,6 +49,7 @@ const pages = {
   'admin-help':         AdminHelpDashboard,
   differentiators:      DifferentiatorsShowcase,
   crawler:              CrawlerPage,
+  'command-center':     CommandCenter,
 }
 
 export default function App() {

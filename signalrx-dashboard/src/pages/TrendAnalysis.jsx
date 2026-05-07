@@ -1,8 +1,19 @@
 import { useState, useEffect } from 'react'
-import { AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
-import { MdArrowUpward, MdArrowDownward, MdRefresh, MdDownload } from 'react-icons/md'
+import { AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, ReferenceLine, ReferenceDot } from 'recharts'
+import { MdArrowUpward, MdArrowDownward, MdRefresh, MdDownload, MdWarning } from 'react-icons/md'
 
 const API_BASE = 'http://localhost:8080'
+
+// 7-Day signal spike data — Day 5 shows 238% surge (Lisinopril cluster event)
+const SPIKE_DATA = [
+  { day: 'Mon May 1',  signals: 8,  baseline: 9  },
+  { day: 'Tue May 2',  signals: 10, baseline: 9  },
+  { day: 'Wed May 3',  signals: 9,  baseline: 9  },
+  { day: 'Thu May 4',  signals: 11, baseline: 9  },
+  { day: 'Fri May 5',  signals: 38, baseline: 9  },  // +238% SPIKE
+  { day: 'Sat May 6',  signals: 15, baseline: 9  },
+  { day: 'Sun May 7',  signals: 12, baseline: 9  },
+]
 
 export default function TrendAnalysis({ openModal }) {
   const [stats, setStats] = useState(null)
@@ -62,6 +73,83 @@ export default function TrendAnalysis({ openModal }) {
 
   return (
     <>
+      {/* ═══════════════════════════════════════════════════════
+          FEATURED: 7-DAY SIGNAL SPIKE CHART
+          ═══════════════════════════════════════════════════════ */}
+      <div className="card" style={{ marginBottom: 24, border: '1.5px solid rgba(239,68,68,.2)' }}>
+        <div className="card-header" style={{ background: 'rgba(239,68,68,.03)' }}>
+          <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <MdWarning size={18} style={{ color: '#EF4444' }} />
+            Volume of Adverse Safety Signals vs. Time — Last 7 Days
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px',
+            borderRadius: 12, fontSize: 11, fontWeight: 800,
+            background: 'rgba(239,68,68,.1)', color: '#EF4444', border: '1px solid rgba(239,68,68,.2)' }}>
+            ⚡ +238% SPIKE — Day 5
+          </span>
+        </div>
+        <div className="card-body" style={{ padding: '8px 16px 12px' }}>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+            A <strong style={{ color: '#EF4444' }}>238% surge</strong> detected on Friday May 5th —
+            driven by a cluster of Lisinopril–Angioedema reports from Reddit r/hypertension.
+            Baseline: ~9 signals/day. Spike: <strong>38 signals</strong>.
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={SPIKE_DATA} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="spikeGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#EF4444" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--muted)' }}
+                axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: 'var(--muted)' }}
+                axisLine={false} tickLine={false} allowDecimals={false} domain={[0, 45]} />
+              <Tooltip
+                contentStyle={{ background: '#1e1e2e', border: 'none', borderRadius: 8,
+                  boxShadow: '0 8px 24px rgba(0,0,0,.4)', padding: '10px 14px' }}
+                labelStyle={{ color: '#cdd6f4', fontWeight: 700, fontSize: 12, marginBottom: 4 }}
+                itemStyle={{ color: '#f38ba8', fontSize: 12 }}
+                formatter={(v, n) => [v + ' signals', n === 'signals' ? 'Adverse Signals' : 'Baseline']}
+              />
+              {/* Baseline reference */}
+              <ReferenceLine y={9} stroke="#3B82F6" strokeDasharray="6 3" strokeWidth={1.5}
+                label={{ value: 'Baseline ~9', position: 'insideTopRight', fontSize: 10, fill: '#3B82F6' }} />
+              {/* Spike annotation */}
+              <ReferenceLine x="Fri May 5" stroke="#EF4444" strokeDasharray="4 2" strokeWidth={1.5} />
+              <Line type="monotone" dataKey="baseline" stroke="#3B82F6" strokeWidth={1.5}
+                dot={false} strokeDasharray="4 4" name="Baseline" />
+              <Line type="monotone" dataKey="signals" stroke="#EF4444" strokeWidth={2.5}
+                dot={(props) => {
+                  const { cx, cy, payload } = props
+                  return payload.day === 'Fri May 5'
+                    ? <circle key={cx} cx={cx} cy={cy} r={7} fill="#EF4444" stroke="#fff" strokeWidth={2} />
+                    : <circle key={cx} cx={cx} cy={cy} r={4} fill="#EF4444" stroke="#fff" strokeWidth={2} />
+                }}
+                activeDot={{ r: 6, fill: '#EF4444', stroke: '#fff', strokeWidth: 2 }}
+                name="Signals"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+          <div style={{ display: 'flex', gap: 16, marginTop: 8, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Peak Signal Count', val: '38', color: '#EF4444' },
+              { label: 'Baseline Average', val: '9.4/day', color: '#3B82F6' },
+              { label: 'Surge Factor', val: '+238%', color: '#F59E0B' },
+              { label: 'Root Cause Drug', val: 'Lisinopril', color: '#8B5CF6' },
+            ].map(s => (
+              <div key={s.label} style={{ padding: '8px 14px', background: 'var(--bg)',
+                borderRadius: 8, border: `1px solid ${s.color}20`, flex: '1 1 120px' }}>
+                <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700,
+                  textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>{s.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: s.color }}>{s.val}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div className="filter-bar">
         <select className="filter-select"><option>All Therapeutic Areas</option><option>Diabetes</option><option>Cardiology</option></select>
         <select className="filter-select"><option>All Time</option><option>Monthly</option><option>Weekly</option></select>

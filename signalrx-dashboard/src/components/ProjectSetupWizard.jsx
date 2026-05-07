@@ -21,9 +21,10 @@ const LATENCY_OPTIONS = [
   { id: 'weekly',   label: 'Weekly Report',       desc: 'Summary digest every 7 days',  icon: MdCalendarMonth, color: '#8B5CF6' },
 ]
 const AGENT_STEPS = [
-  { text: 'Fetching HTML DOM Tree…',                              duration: 1000 },
-  { text: 'Agent analyzing UI structure & isolating threads…',    duration: 1500 },
-  { text: 'Extracting CSS selectors & generating JSON config…',   duration: 1000 },
+  { tag: '[SYSTEM]', text: 'Initializing Agentic Crawler for target URL…',          color: '#89dceb', duration: 800  },
+  { tag: '[INFO]',   text: 'Fetching HTML DOM from target URL…',                     color: '#89b4fa', duration: 1200 },
+  { tag: '[AGENT]',  text: 'Analyzing DOM structure & isolating comment threads…',  color: '#cba6f7', duration: 1500 },
+  { tag: '[SUCCESS]',text: 'Selectors generated: {post: \'.thread\', author: \'.user\', body: \'.post-content\', timestamp: \'.created-date\'}', color: '#a6e3a1', duration: 800 },
 ]
 
 /* ── Helpers ───────────────────────────────────────────────── */
@@ -286,28 +287,41 @@ export default function ProjectSetupWizard({ onClose }) {
             </button>
           </div>
 
-          {/* ── Agent Progress Steps ─────────────────────────── */}
+          {/* ── Agentic Terminal Window ───────────────────────── */}
           {agentStep >= 0 && (
-            <div style={{marginBottom:16,padding:'14px 18px',background:'var(--bg)',border:'1px solid var(--border)',
-              borderRadius:'var(--radius)',animation:'slideUp .2s ease'}}>
-              {AGENT_STEPS.map((step, i) => {
-                const done = agentStep > i
-                const active = agentStep === i && agentStep < AGENT_STEPS.length
-                return (
-                  <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'6px 0',
-                    opacity: agentStep < i ? 0.3 : 1, transition:'opacity .3s'}}>
-                    {done
-                      ? <MdCheckCircle size={18} style={{color:'var(--success)',flexShrink:0}}/>
-                      : active
-                        ? <span className="login-spinner" style={{width:16,height:16,borderColor:'rgba(139,92,246,.3)',borderTopColor:'#8B5CF6'}}/>
-                        : <div style={{width:16,height:16,borderRadius:'50%',border:'2px solid var(--border)',flexShrink:0}}/>}
-                    <span style={{fontSize:13,fontWeight:active?600:400,color:done?'var(--success)':active?'var(--text)':'var(--muted)'}}>
-                      {step.text}
-                    </span>
-                    {done && <span style={{fontSize:11,color:'var(--muted)',marginLeft:'auto'}}>✓</span>}
+            <div style={{marginBottom:16,borderRadius:10,overflow:'hidden',border:'1px solid #313244',animation:'slideUp .2s ease'}}>
+              {/* Terminal title bar */}
+              <div style={{background:'#1e1e2e',padding:'8px 14px',display:'flex',alignItems:'center',gap:6}}>
+                <span style={{width:11,height:11,borderRadius:'50%',background:'#f38ba8',display:'block'}}/>
+                <span style={{width:11,height:11,borderRadius:'50%',background:'#f9e2af',display:'block'}}/>
+                <span style={{width:11,height:11,borderRadius:'50%',background:'#a6e3a1',display:'block'}}/>
+                <span style={{flex:1,textAlign:'center',fontSize:10,fontWeight:600,color:'#6c7086',fontFamily:'monospace'}}>agentic-scraper — bash</span>
+              </div>
+              {/* Terminal body */}
+              <div style={{background:'#181825',padding:'14px 16px',minHeight:96}}>
+                {AGENT_STEPS.slice(0, Math.max(agentStep, 0) + (agentStep < AGENT_STEPS.length ? 1 : 0)).map((step, i) => {
+                  const done = agentStep > i
+                  const active = agentStep === i && agentStep < AGENT_STEPS.length
+                  return (
+                    <div key={i} style={{display:'flex',alignItems:'flex-start',gap:8,padding:'3px 0',
+                      opacity: i > agentStep ? 0 : 1, animation:'fadeIn .3s ease',
+                      fontFamily:"'JetBrains Mono',Consolas,monospace",fontSize:12.5,lineHeight:'20px'}}>
+                      <span style={{color:'#585b70',fontSize:11,flexShrink:0,minWidth:20}}>{'0'+(i+1)}</span>
+                      <span style={{color:step.color,fontWeight:700,flexShrink:0}}>{step.tag}</span>
+                      <span style={{color:'#cdd6f4'}}>{step.text}</span>
+                      {active && <span style={{display:'inline-block',width:7,height:14,background:'#a6e3a1',
+                        marginLeft:4,verticalAlign:'middle',animation:'blink 1s step-end infinite'}}/> }
+                    </div>
+                  )
+                })}
+                {agentStep >= AGENT_STEPS.length && agentResult && (
+                  <div style={{display:'flex',gap:8,padding:'3px 0',fontFamily:"'JetBrains Mono',Consolas,monospace",fontSize:12.5}}>
+                    <span style={{color:'#585b70',fontSize:11,minWidth:20}}>05</span>
+                    <span style={{color:'#a6e3a1',fontWeight:700}}>[DONE]</span>
+                    <span style={{color:'#cdd6f4'}}>Config saved — confidence: {(agentResult.confidence_score*100).toFixed(0)}%</span>
                   </div>
-                )
-              })}
+                )}
+              </div>
             </div>
           )}
 
