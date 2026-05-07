@@ -1,41 +1,154 @@
-import { useState } from 'react'
-import { MdWarning, MdShowChart, MdAssignmentTurnedIn, MdGroupAdd, MdUpdate, MdCheckCircle, MdSchedule, MdBackup } from 'react-icons/md'
+import { useState, useEffect } from 'react'
+import { MdWarning, MdShowChart, MdAssignmentTurnedIn, MdNotificationsActive, MdRefresh, MdDoneAll } from 'react-icons/md'
 
-const items = [
-  { icon: MdWarning, iconBg: 'var(--danger-bg)', iconC: 'var(--danger)', title: 'Critical Signal Detected', desc: 'New critical signal SIG-2847 for Lisinopril — Angioedema detected via Reddit mentions.', time: '2 hours ago', unread: true },
-  { icon: MdShowChart, iconBg: 'var(--warn-bg)', iconC: 'var(--warn)', title: 'Sentiment Spike Alert', desc: 'Negative sentiment for "Metformin" increased 45% in the last 24 hours on Reddit.', time: '4 hours ago', unread: true },
-  { icon: MdAssignmentTurnedIn, iconBg: 'var(--success-bg)', iconC: 'var(--success)', title: 'Report Approved', desc: 'RPT-112 Q2 2025 Sentiment Analysis has been approved by Dr. Priya S.', time: '6 hours ago', unread: true },
-  { icon: MdGroupAdd, iconBg: 'var(--info-bg)', iconC: 'var(--info)', title: 'New Team Member', desc: 'Dr. Anita M. has joined the Pharmacovigilance team as a Safety Analyst.', time: '1 day ago', unread: true },
-  { icon: MdUpdate, iconBg: 'var(--info-bg)', iconC: 'var(--info)', title: 'System Update', desc: 'SignalRx AI v3.2.1 deployed. New: Enhanced social listening, batch processing.', time: '1 day ago', unread: true },
-  { icon: MdCheckCircle, iconBg: 'var(--success-bg)', iconC: 'var(--success)', title: 'Signal Resolved', desc: 'SIG-2844 Omeprazole — Hypomagnesemia has been resolved after review.', time: '2 days ago', unread: false },
-  { icon: MdSchedule, iconBg: 'var(--warn-bg)', iconC: 'var(--warn)', title: 'Report Deadline', desc: 'Social Listening Summary (RPT-109) is due in 28 days. Status: Draft.', time: '3 days ago', unread: false },
-  { icon: MdBackup, iconBg: 'var(--info-bg)', iconC: 'var(--info)', title: 'Data Import Complete', desc: 'Batch import of 12,470 social media posts completed. 34 duplicates found.', time: '4 days ago', unread: false },
-]
+const API_BASE = 'http://localhost:8080'
+
+const iconMap = {
+  critical: { icon: MdWarning,               bg: 'var(--danger-bg)', color: 'var(--danger)' },
+  warning:  { icon: MdShowChart,             bg: 'var(--warn-bg)',   color: 'var(--warn)'   },
+  info:     { icon: MdAssignmentTurnedIn,    bg: 'var(--info-bg)',   color: 'var(--info)'   },
+}
 
 export default function Notifications() {
+  const [notifications, setNotifications] = useState([])
+  const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('All')
-  const tabs = ['All', 'Unread (5)', 'System', 'Signals']
+
+  const fetchNotifications = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/notifications`)
+      const data = await res.json()
+      if (data.status === 'success') setNotifications(data.notifications || [])
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err)
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchNotifications() }, [])
+
+  // ── Mark All Read ─────────────────────────────────────────────
+  const handleMarkAllRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })))
+  }
+
+  // ── Mark single read ──────────────────────────────────────────
+  const handleMarkRead = (index) => {
+    setNotifications(prev => prev.map((n, i) => i === index ? { ...n, unread: false } : n))
+  }
+
+  // ── Delete notification ──────────────────────────────────────
+  const handleDelete = (index) => {
+    setNotifications(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const unreadCount = notifications.filter(n => n.unread).length
+  const tabs = ['All', `Unread (${unreadCount})`, 'Signals', 'Alerts']
+
+  const filtered = notifications.filter(n => {
+    if (tab === 'All') return true
+    if (tab.startsWith('Unread')) return n.unread
+    if (tab === 'Signals') return n.type === 'signal'
+    if (tab === 'Alerts') return n.type === 'alert'
+    return true
+  })
+
   return (
     <>
       <div className="filter-bar" style={{ justifyContent: 'space-between' }}>
         <div className="tabs" style={{ border: 'none', margin: 0 }}>
-          {tabs.map(t => <div key={t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>{t}</div>)}
-        </div>
-        <button className="btn btn-ghost btn-sm">Mark All Read</button>
-      </div>
-      <div className="card">
-        <div className="card-body" style={{ padding: 0 }}>
-          {items.map((n, i) => (
-            <div key={i} className={`notif-item ${n.unread ? 'unread' : ''}`}>
-              <div className="notif-icon" style={{ background: n.iconBg, color: n.iconC }}><n.icon size={18} /></div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{n.title}</div>
-                <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.4 }}>{n.desc}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{n.time}</div>
-              </div>
-              {n.unread && <div style={{ width: 8, height: 8, background: 'var(--blue)', borderRadius: '50%', flexShrink: 0, marginTop: 4 }} />}
-            </div>
+          {tabs.map(t => (
+            <div key={t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>{t}</div>
           ))}
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* Unread count badge */}
+          {unreadCount > 0 && (
+            <span style={{ fontSize: 12, color: 'var(--muted)', padding: '2px 8px', background: 'var(--bg)', borderRadius: 99, border: '1px solid var(--border)' }}>
+              {unreadCount} unread
+            </span>
+          )}
+          {/* Reload */}
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={fetchNotifications}
+            disabled={loading}
+            title="Reload notifications"
+            style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+          >
+            <MdRefresh size={16} className={loading ? 'spin' : ''} />
+            {loading ? 'Loading...' : 'Reload'}
+          </button>
+          {/* Mark All Read */}
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={handleMarkAllRead}
+            disabled={unreadCount === 0}
+            title="Mark all as read"
+            style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+          >
+            <MdDoneAll size={16} />
+            Mark All Read
+          </button>
+        </div>
+      </div>
+
+      <div className="card">
+        {/* Summary strip */}
+        {!loading && notifications.length > 0 && (
+          <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--border)', fontSize: 12, color: 'var(--muted)', display: 'flex', gap: 20 }}>
+            <span>🔴 Critical: <strong>{notifications.filter(n => n.icon === 'critical').length}</strong></span>
+            <span>🟠 Warnings: <strong>{notifications.filter(n => n.icon === 'warning').length}</strong></span>
+            <span>🔵 Info: <strong>{notifications.filter(n => n.icon === 'info').length}</strong></span>
+            <span style={{ marginLeft: 'auto' }}>Total: <strong>{notifications.length}</strong></span>
+          </div>
+        )}
+
+        <div className="card-body" style={{ padding: 0 }}>
+          {loading ? (
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+              <MdRefresh size={24} className="spin" style={{ marginBottom: 8 }} />
+              <div>Loading notifications...</div>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
+              {tab.startsWith('Unread') && unreadCount === 0
+                ? '✅ All notifications are marked as read.'
+                : 'No notifications yet. Run AI analysis to generate signals.'}
+            </div>
+          ) : (
+            filtered.map((n, i) => {
+              const iconInfo = iconMap[n.icon] || iconMap.info
+              const IconComp = iconInfo.icon
+              const originalIndex = notifications.indexOf(n)
+              return (
+                <div key={i} className={`notif-item ${n.unread ? 'unread' : ''}`}
+                  style={{ cursor: 'pointer', transition: 'background 0.15s' }}
+                  onClick={() => handleMarkRead(originalIndex)}>
+                  <div className="notif-icon" style={{ background: iconInfo.bg, color: iconInfo.color }}>
+                    <IconComp size={18} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: n.unread ? 700 : 500, marginBottom: 2 }}>{n.title}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.4 }}>{n.desc}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{n.time}</div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                    {n.unread && <div style={{ width: 8, height: 8, background: 'var(--blue)', borderRadius: '50%' }} />}
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      title="Dismiss"
+                      style={{ fontSize: 11, padding: '2px 6px', opacity: 0.5 }}
+                      onClick={e => { e.stopPropagation(); handleDelete(originalIndex) }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )
+            })
+          )}
         </div>
       </div>
     </>

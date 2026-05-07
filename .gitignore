@@ -1,5 +1,26 @@
+# Dependencies
 node_modules/
 dist/
+
+# Environment
 .env
+
+# OS
 .DS_Store
+
+# Logs
 *.log
+alerts.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Database
+*.db
+chroma_db/
+
+# IDE
+.vscode/
+.idea/

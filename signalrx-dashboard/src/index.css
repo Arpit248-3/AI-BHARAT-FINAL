@@ -110,6 +110,149 @@ tr:hover td{background:rgba(0,123,255,.02)}
 /* Animations */
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .fade-in{animation:slideUp .3s ease forwards}
+.spin{animation:spin 1s linear infinite}
+
 
 @media(max-width:1024px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main-content{margin-left:0}.kpi-grid{grid-template-columns:repeat(2,1fr)}.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* ── Sidebar extra ──────────────────────────────── */
+.nav-item-admin{border:1px solid rgba(239,68,68,.25)}
+.nav-item-admin:hover{background:rgba(239,68,68,.08)!important}
+.nav-item-admin.active{background:rgba(239,68,68,.18)!important}
+.nav-admin-tag{margin-left:auto;font-size:9px;font-weight:700;padding:2px 6px;background:rgba(239,68,68,.2);color:#EF4444;border-radius:8px;text-transform:uppercase;letter-spacing:.04em}
+
+/* ── Login page ─────────────────────────────────── */
+@keyframes float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-18px) scale(1.04)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+@keyframes loginIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+.login-page{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse 120% 80% at 60% 10%,#0d2744 0%,#071424 60%,#030c1a 100%);overflow:hidden;z-index:2000}
+.login-particle{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(0,123,255,.7),rgba(0,123,255,0));animation:float linear infinite}
+.login-orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none}
+.login-orb-1{width:480px;height:480px;top:-120px;right:-80px;background:rgba(0,123,255,.12)}
+.login-orb-2{width:360px;height:360px;bottom:-100px;left:-60px;background:rgba(16,185,129,.08)}
+
+.login-card{background:rgba(255,255,255,.04);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:40px 44px;width:100%;max-width:440px;box-shadow:0 24px 64px rgba(0,0,0,.4);position:relative;z-index:1;animation:loginIn .4s ease}
+.login-card-exit{opacity:0;transform:translateY(-8px);transition:all .22s}
+.login-card-enter{opacity:1;transform:translateY(0);transition:all .22s}
+.login-card.shake{animation:shake .5s ease}
+
+.login-logo{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+.login-logo-icon{width:48px;height:48px;background:rgba(0,123,255,.2);border:1px solid rgba(0,123,255,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;color:#60a5fa;flex-shrink:0}
+.login-logo-title{font-size:22px;font-weight:800;color:#fff;letter-spacing:-.03em}
+.login-logo-sub{font-size:11px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em}
+
+.login-tabs{display:flex;background:rgba(255,255,255,.06);border-radius:10px;padding:4px;gap:4px;margin-bottom:24px}
+.login-tab{flex:1;padding:9px;font-size:13px;font-weight:600;border-radius:8px;color:rgba(255,255,255,.5);transition:all .2s;text-align:center}
+.login-tab.active{background:rgba(0,123,255,.35);color:#fff;box-shadow:0 2px 8px rgba(0,123,255,.25)}
+.login-tab:hover:not(.active){color:rgba(255,255,255,.8)}
+
+.login-heading{font-size:22px;font-weight:700;color:#fff;letter-spacing:-.02em;margin-bottom:4px}
+.login-sub{font-size:13px;color:rgba(255,255,255,.45);margin-bottom:20px;line-height:1.5}
+.login-alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px}
+.login-alert-error{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#fca5a5}
+.login-alert-success{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:#6ee7b7}
+.login-form{display:flex;flex-direction:column;gap:14px}
+.login-field{display:flex;flex-direction:column;gap:6px}
+.login-field label{font-size:11px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.05em}
+.login-input-wrap{position:relative;display:flex;align-items:center}
+.login-input-wrap input{width:100%;padding:11px 42px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:14px;transition:all .2s}
+.login-input-wrap input:focus{outline:none;border-color:rgba(0,123,255,.6);background:rgba(0,123,255,.05);box-shadow:0 0 0 3px rgba(0,123,255,.15)}
+.login-input-wrap input::placeholder{color:rgba(255,255,255,.25)}
+.login-input-icon{position:absolute;left:13px;font-size:18px;color:rgba(255,255,255,.3);pointer-events:none}
+.login-pw-toggle{position:absolute;right:12px;color:rgba(255,255,255,.3);transition:color .2s;display:flex}
+.login-pw-toggle:hover{color:rgba(255,255,255,.7)}
+.login-submit{width:100%;padding:13px;border-radius:10px;background:linear-gradient(135deg,#1a6ef5,#0056b3);color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:-.01em;box-shadow:0 4px 16px rgba(0,123,255,.4);transition:all .2s;margin-top:4px}
+.login-submit:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,123,255,.5)}
+.login-submit:disabled{opacity:.6;cursor:not-allowed}
+.login-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;display:inline-block}
+.login-switch{font-size:13px;color:rgba(255,255,255,.4);margin-top:16px;text-align:center}
+.login-switch button{color:#60a5fa;font-weight:600;text-decoration:underline;font-size:13px}
+.login-admin-hint{margin-top:16px;padding:10px 14px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:12px;color:rgba(255,255,255,.5);text-align:center}
+.login-admin-hint code{color:#fbbf24;background:rgba(245,158,11,.15);padding:1px 6px;border-radius:4px;font-size:12px}
+
+/* ── Help Center page ───────────────────────────── */
+.help-center{max-width:860px;margin:0 auto}
+.help-hero{display:flex;align-items:center;gap:16px;margin-bottom:24px}
+.help-hero-icon{width:56px;height:56px;border-radius:14px;background:rgba(0,123,255,.12);color:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid rgba(0,123,255,.2)}
+.help-hero-title{font-size:24px;font-weight:800;letter-spacing:-.03em;margin-bottom:2px}
+.help-hero-sub{font-size:13px;color:var(--muted)}
+
+.help-ask-card{}
+.help-ask-textarea{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:14px;color:var(--text);resize:vertical;transition:all .2s;line-height:1.6;background:var(--bg)}
+.help-ask-textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,123,255,.12);background:#fff}
+.help-ask-textarea::placeholder{color:var(--muted)}
+.help-submit-msg{font-size:13px;margin-top:8px;padding:8px 12px;border-radius:6px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:var(--success)}
+
+.help-guides-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
+.help-guide-card{display:flex;align-items:center;gap:16px;padding:18px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .2s}
+.help-guide-card:hover{box-shadow:var(--shadow-md);border-color:var(--blue);transform:translateY(-2px)}
+.help-guide-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.help-guide-info{flex:1}
+.help-guide-title{font-size:15px;font-weight:700;margin-bottom:3px}
+.help-guide-desc{font-size:12px;color:var(--muted);line-height:1.4}
+.help-guide-arrow{color:var(--muted);flex-shrink:0;transition:transform .2s}
+.help-guide-card:hover .help-guide-arrow{transform:translateX(4px);color:var(--blue)}
+
+/* Guide drawer */
+.help-drawer-overlay{position:fixed;inset:0;background:rgba(10,25,47,.4);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:stretch;justify-content:flex-end}
+.help-drawer{width:420px;background:var(--surface);box-shadow:-8px 0 32px rgba(0,0,0,.1);display:flex;flex-direction:column;animation:slideInRight .25s ease}
+@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.help-drawer-header{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:14px}
+.help-drawer-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.help-drawer-title{font-size:17px;font-weight:700;margin-bottom:4px}
+.help-drawer-sub{font-size:12px;color:var(--muted)}
+.help-drawer-close{margin-left:auto;color:var(--muted);transition:color .2s;display:flex;padding:4px;flex-shrink:0}
+.help-drawer-close:hover{color:var(--danger)}
+.help-drawer-steps{flex:1;overflow-y:auto;padding:20px}
+.help-step{display:flex;gap:16px;margin-bottom:20px;position:relative}
+.help-step::before{content:'';position:absolute;left:17px;top:36px;bottom:-12px;width:2px;background:var(--border)}
+.help-step:last-child::before{display:none}
+.help-step-num{width:36px;height:36px;border-radius:50%;background:var(--blue);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:1}
+.help-step-body{display:flex;gap:12px;padding-top:6px}
+.help-step-emoji{font-size:20px;flex-shrink:0}
+.help-step-title{font-size:14px;font-weight:600;margin-bottom:3px}
+.help-step-desc{font-size:13px;color:var(--muted);line-height:1.5}
+.help-drawer-footer{padding:16px 20px;border-top:1px solid var(--border)}
+
+/* FAQ */
+.help-faq-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.help-faq-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .2s}
+.help-faq-item.open{border-color:var(--blue)}
+.help-faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;font-size:14px;font-weight:600;color:var(--text);text-align:left;transition:all .2s}
+.help-faq-q:hover{background:var(--bg)}
+.help-faq-a{padding:0 18px 14px;font-size:13px;color:var(--text2);line-height:1.6;border-top:1px solid var(--border)}
+
+/* My Queries */
+.help-queries-list{display:flex;flex-direction:column;gap:12px;margin-top:4px}
+.help-query-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;transition:all .2s}
+.help-query-card:hover{box-shadow:var(--shadow-md)}
+.help-query-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.help-query-question{flex:1;font-size:14px;font-weight:600;line-height:1.4}
+.help-query-answer{margin-bottom:8px;padding:10px 14px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:6px;font-size:13px;color:var(--text);line-height:1.5}
+.help-query-meta{font-size:11px;color:var(--muted)}
+.help-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 0;font-size:14px;color:var(--muted);text-align:center}
+
+/* ── Admin Help Dashboard ───────────────────────── */
+.admin-help-page{max-width:960px;margin:0 auto}
+.admin-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.admin-stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);text-align:center;transition:all .2s}
+.admin-stat-card:hover{box-shadow:var(--shadow-md)}
+.admin-stat-value{font-size:30px;font-weight:800;letter-spacing:-.03em;margin-bottom:4px}
+.admin-stat-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+
+/* Admin answer drawer */
+.admin-drawer-overlay{position:fixed;inset:0;background:rgba(10,25,47,.4);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:stretch;justify-content:flex-end}
+.admin-drawer{width:460px;background:var(--surface);box-shadow:-8px 0 32px rgba(0,0,0,.1);display:flex;flex-direction:column;overflow:hidden;animation:slideInRight .25s ease}
+.admin-drawer-header{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.admin-drawer-title{font-size:18px;font-weight:700;margin-bottom:6px}
+.admin-drawer-user{display:flex;align-items:center;gap:12px;padding:14px 20px;background:var(--bg);border-bottom:1px solid var(--border)}
+.admin-drawer-avatar{width:40px;height:40px;border-radius:50%;background:var(--blue);color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.admin-drawer-section-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:14px 20px 6px}
+.admin-drawer-question{margin:0 20px 4px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:14px;line-height:1.6;color:var(--text)}
+.admin-drawer-prev-answer{margin:0 20px 4px;padding:12px 14px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;font-size:13px;line-height:1.6;color:var(--text)}
+.admin-drawer .help-ask-textarea{margin:0 20px;width:calc(100% - 40px)}
+.admin-drawer-footer{padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;margin-top:auto}
